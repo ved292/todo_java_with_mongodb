@@ -10,10 +10,11 @@ public class Todos {
 
     public String title;
     public String description;
-
-    public Todos(String title,String description)
+    public Boolean isDeleted;
+    public Todos(String title,String description,Boolean isDeleted)
     {
         this.title = title;
         this.description = description;
+        this.isDeleted = isDeleted;
     }
 }
