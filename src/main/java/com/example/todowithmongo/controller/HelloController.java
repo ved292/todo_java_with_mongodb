@@ -1,7 +1,10 @@
 package com.example.todowithmongo.controller;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,9 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.PutMapping;
-
-
 @RestController
 public class HelloController {
 
@@ -24,35 +24,43 @@ public class HelloController {
 
     
     @GetMapping("/")
-    public List<Todos> find() {
-        return todoRepo.findAll();
+    public ResponseEntity<List<Todos>> get() {
+        return ResponseEntity.ok(todoRepo.findByIsDeletedFalse());
     }   
 
 
-    @PostMapping("/post")
-    public String insert(@RequestBody Todos entity) {
-        todoRepo.save(entity);  
-        return "Data Inserted";
+    @PostMapping("/")
+    public ResponseEntity<String> insert(@RequestBody Todos entity) {
+        entity.isDeleted=false;
+        todoRepo.save(entity); 
+        return ResponseEntity.status(HttpStatus.CREATED).body("Data Inserted");
     }
     
 
-    @DeleteMapping("/delete/{id}")
-    public String deleteTodoById(@PathVariable String id) {
-        if (todoRepo.existsById(id)) {
-            todoRepo.deleteById(id);
-            return "Data Deleted";
-        }
-        return "Data Not Found";
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> delete(@PathVariable String id) {
+        return todoRepo.findById(id).map(existing->{
+            existing.isDeleted = true;
+            todoRepo.save(existing);
+            return ResponseEntity.ok("Data deleted");
+        }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Data not found"));
     }
 
 
-    @PutMapping("/put/{id}")
-    public String updateTodo(@PathVariable String id, @RequestBody Todos entity) {
+    @PatchMapping("/{id}")
+    public ResponseEntity<String> update(@PathVariable String id, @RequestBody Todos entity) {
         return todoRepo.findById(id).map(existing -> {
+            if (entity.title != null) {
             existing.title = entity.title;
+        }
+        if (entity.description != null) {
             existing.description = entity.description;
+        }
+        if (entity.isDeleted != null) {
+            existing.isDeleted = entity.isDeleted;
+        }
             todoRepo.save(existing);
-            return "Entry Updated";
-        }).orElse("Entry not found");
+            return ResponseEntity.ok("Entry Updated");
+        }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Entry not found"));
     }
 }
